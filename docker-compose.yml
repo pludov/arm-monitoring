@@ -1,4 +1,4 @@
-version: '3'
+version: '2'
 
 volumes:
   prometheus_data: {}
@@ -6,39 +6,32 @@ volumes:
 
 networks:
   default:
-  traefik:
-    external:
-      name: containermgmt_traefik
 
 services:
 
   prometheus:
     image: napnap75/rpi-prometheus:prometheus
-    depends_on:
-      - cadvisor
-      - node_exporter
     restart: unless-stopped
     ports:
       - 9090:9090
     networks:
       - default
-      - traefik
     volumes:
       - ./prometheus/:/etc/prometheus/
       - prometheus_data:/prometheus
     command:
+      - '--log.level=debug'
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention=10d'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
-    # deploy:
-    #   placement:
-    #     constraints:
-    #       - node.hostname == ${HOSTNAME}
+    extra_hosts:
+      - "node_exporter:172.17.0.1"
+      - "mobindi:172.17.0.1"
 
   node_exporter:
-    image: napnap75/rpi-prometheus:node_exporter
+    image: prom/node-exporter:v1.0.1
     restart: unless-stopped
     ports:
       - 9100
@@ -46,54 +39,17 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+      # Linaro specific fix : thermal zone 0 is broken. Replace by thermal zone 1
+      - /sys/class/thermal/thermal_zone1:/host/sys/class/thermal/thermal_zone0:ro
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.wifi'
       - --collector.filesystem.ignored-mount-points
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
-    # deploy:
-    #   mode: global
-
-  arm_exporter:
-    image: carlosedp/arm_exporter
-    restart: unless-stopped
-    ports:
-      - 9243
-    # deploy:
-    #   mode: global
-
-
-  cadvisor:
-    image: carlosedp/rpi-cadvisor
-    restart: unless-stopped
-    ports:
-      - 8082:8080
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    # deploy:
-    #   mode: global
-    command:
-      - --global_housekeeping_interval=30s
-      - --housekeeping_interval=5s
-      - --storage_duration=1m0s
-
-  # alertmanager:
-  #   image: napnap75/rpi-prometheus:alertmanager
-  #   restart: unless-stopped
-  #   ports:
-  #     - 9093:9093
-  #   volumes:
-  #     - ./alertmanager/:/etc/alertmanager/
-  #   command:
-  #     - '-config.file=/etc/alertmanager/config.yml'
-  #     - '-storage.path=/alertmanager'
-  #   deploy:
-  #     placement:
-  #       constraints:
-  #         - node.hostname == ${HOSTNAME}
+      - --web.listen-address=:9100
+    network_mode: host
 
   grafana:
     image: fg2it/grafana-armhf:v4.6.3
@@ -102,18 +58,10 @@ services:
     restart: unless-stopped
     networks:
       - default
-      - traefik
     ports:
       - 3000:3000
     volumes:
       - grafana_data:/var/lib/grafana
     env_file:
       - config.monitoring
-    labels:
-      - "traefik.backend=grafana"
-      - "traefik.frontend.rule=Host:grafana.cloud.carlosedp.com"
-      - "traefik.docker.network=containermgmt_traefik"
-      - "traefik.enable=true"
-      - "traefik.port=3000"
-      - "traefik.default.protocol=http"
 
