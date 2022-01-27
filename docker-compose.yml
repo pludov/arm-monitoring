@@ -59,9 +59,10 @@ services:
     networks:
       - default
     ports:
-      - 3000:3000
+      - 127.0.0.1:3000:3000
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana.ini:/etc/grafana/grafana.ini
     env_file:
       - config.monitoring
 
