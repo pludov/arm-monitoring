@@ -10,7 +10,7 @@ networks:
 services:
 
   prometheus:
-    image: napnap75/rpi-prometheus:prometheus
+    image: prom/prometheus:v2.36.2
     restart: unless-stopped
     ports:
       - 9090:9090
