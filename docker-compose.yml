@@ -39,8 +39,6 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-      # Linaro specific fix : thermal zone 0 is broken. Replace by thermal zone 1
-      - /sys/class/thermal/thermal_zone1:/host/sys/class/thermal/thermal_zone0:ro
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
