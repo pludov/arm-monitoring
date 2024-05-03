@@ -44,6 +44,7 @@ services:
       - "-promscrape.config.strictParse=false"
     extra_hosts:
       - "node_exporter:172.17.0.1"
+      - "mobindi:172.17.0.1"
       
   node_exporter:
     image: prom/node-exporter:v1.0.1
