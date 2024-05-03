@@ -18,7 +18,7 @@ services:
       - default
     volumes:
       - victoriametrics_data:/victoria-metrics-data
-    command: [ -retentionPeriod=31d ]
+    command: [ -retentionPeriod=31y ]
 
   vmagent:
     image: victoriametrics/vmagent:v1.101.0
@@ -30,11 +30,10 @@ services:
       - "./prometheus:/vmagent-conf:ro"
     command:
       - "-remoteWrite.url=http://victoria-metrics:8428/api/v1/write"
-      - "-remoteWrite.url=http://ombre.fbi:8428/api/v1/write"
       - "-remoteWrite.tmpDataPath=/var/vmagent"
       - "-remoteWrite.forceVMProto=true"
       - "-remoteWrite.label"
-      - "host=allsky"
+      - "host=ombre.fbi"
       - "-remoteWrite.maxDiskUsagePerURL=500MB"
       - "-memory.allowedBytes=128MB"
       - "-promscrape.config=/vmagent-conf/prometheus.yml"
@@ -42,13 +41,12 @@ services:
       - "-promscrape.config.strictParse=false"
     extra_hosts:
       - "node_exporter:172.17.0.1"
-      - "mobindi:172.17.0.1"
       
   node_exporter:
     image: prom/node-exporter:v1.0.1
     restart: unless-stopped
     ports:
-      - 9100
+      - 172.17.0.1:9100:9100
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -64,7 +62,7 @@ services:
     network_mode: host
 
   grafana:
-    image: fg2it/grafana-armhf:v4.6.3
+    image: grafana/grafana:10.4.2
 #    depends_on:
 #      - prometheus
     restart: unless-stopped
