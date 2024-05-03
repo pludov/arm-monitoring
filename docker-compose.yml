@@ -30,7 +30,7 @@ services:
       - default
     volumes:
       - "vmagent_data:/var/vmagent"
-      - "./prometheus:/vmagent-conf:ro"
+      - "./scrape-config:/vmagent-conf:ro"
     command:
       - "-remoteWrite.url=${REMOTEWRITE_URL:-http://victoria-metrics:8428/api/v1/write}"
       - "-remoteWrite.tmpDataPath=/var/vmagent"
@@ -39,7 +39,7 @@ services:
       - "host=${HOSTNAME?missing hostname}"
       - "-remoteWrite.maxDiskUsagePerURL=500MB"
       - "-memory.allowedBytes=${MAX_VMAGENT_MEMORY:-128MB}"
-      - "-promscrape.config=/vmagent-conf/prometheus.yml"
+      - "-promscrape.config=/vmagent-conf/${SCRAPE_CONFIG:-default.yml}"
       # Required to allow vmalert options
       - "-promscrape.config.strictParse=false"
     extra_hosts:
