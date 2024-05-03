@@ -1,35 +1,49 @@
 version: '2'
 
 volumes:
-  prometheus_data: {}
+  victoriametrics_data: {}
+  vmagent_data: {}
   grafana_data: {}
-
+  
 networks:
   default:
 
 services:
-
-  prometheus:
-    image: prom/prometheus:v2.36.2
+  victoria-metrics:
+    image: victoriametrics/victoria-metrics:v1.101.0 
     restart: unless-stopped
     ports:
-      - 9090:9090
+      - 8428:8428
     networks:
       - default
     volumes:
-      - ./prometheus/:/etc/prometheus/
-      - prometheus_data:/prometheus
+      - victoriametrics_data:/victoria-metrics-data
+    command: [ -retentionPeriod=31d ]
+
+  vmagent:
+    image: victoriametrics/vmagent:v1.101.0
+    restart: unless-stopped
+    networks:
+      - default
+    volumes:
+      - "vmagent_data:/var/vmagent"
+      - "./prometheus:/vmagent-conf:ro"
     command:
-      - '--log.level=debug'
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention=30d'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - "-remoteWrite.url=http://victoria-metrics:8428/api/v1/write"
+      - "-remoteWrite.url=http://ombre.fbi:8428/api/v1/write"
+      - "-remoteWrite.tmpDataPath=/var/vmagent"
+      - "-remoteWrite.forceVMProto=true"
+      - "-remoteWrite.label"
+      - "host=allsky"
+      - "-remoteWrite.maxDiskUsagePerURL=500MB"
+      - "-memory.allowedBytes=128MB"
+      - "-promscrape.config=/vmagent-conf/prometheus.yml"
+      # Required to allow vmalert options
+      - "-promscrape.config.strictParse=false"
     extra_hosts:
       - "node_exporter:172.17.0.1"
       - "mobindi:172.17.0.1"
-
+      
   node_exporter:
     image: prom/node-exporter:v1.0.1
     restart: unless-stopped
@@ -51,8 +65,8 @@ services:
 
   grafana:
     image: fg2it/grafana-armhf:v4.6.3
-    depends_on:
-      - prometheus
+#    depends_on:
+#      - prometheus
     restart: unless-stopped
     networks:
       - default
