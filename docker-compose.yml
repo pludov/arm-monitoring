@@ -45,6 +45,8 @@ services:
     extra_hosts:
       - "node_exporter:172.17.0.1"
       - "mobindi:172.17.0.1"
+    ports:
+      - 127.0.0.1:8429:8429
       
   node_exporter:
     image: prom/node-exporter:v1.0.1
